@@ -88,31 +88,41 @@ int main(void)
                 sizeof(buffer) - 1,
                 0
             );
+        if (bytes_received > 0)
+        {
+            buffer[bytes_received] = '\0';
 
-            if (bytes_received > 0)
+            HttpRequest request;
+
+            if (request_parse(buffer, &request) == 0)
             {
-                buffer[bytes_received] = '\0';
+                printf(
+                    "Method: %s | Path: %s | Version: %s\n",
+                    request.method,
+                    request.path,
+                    request.version
+                );
 
-                HttpRequest request;
-
-                if (request_parse(buffer, &request) == 0)
+                if (strcmp(request.path, "/") == 0)
                 {
-                    printf(
-                        "Method: %s | Path: %s | Version: %s\n",
-                        request.method,
-                        request.path,
-                        request.version
+                    response_send_file(
+                        client_fd,
+                        200,
+                        "public/index.html"
+                    );
+                }
+                else
+                {
+                    char filename[255];
+
+                    snprintf(
+                        filename,
+                        sizeof(filename),
+                        "public%s",
+                        request.path
                     );
 
-                    if (strcmp(request.path, "/") == 0)
-                    {
-                        response_send_file(
-                            client_fd,
-                            200,
-                            "public/index.html"
-                        );
-                    }
-                    else
+                    if (response_send_file(client_fd, 200, filename) == -1)
                     {
                         response_send_file(
                             client_fd,
@@ -122,6 +132,7 @@ int main(void)
                     }
                 }
             }
+        }
 
             close(client_fd);
         }
